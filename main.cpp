@@ -249,6 +249,12 @@ public:
         kv.key = Key(key_str);
         kv.value = value;
 
+        // Check if already exists (no duplicate key-value pairs)
+        vector<int> existing = find(key_str);
+        for (int v : existing) {
+            if (v == value) return; // Already exists, don't insert
+        }
+
         Node root;
         read_node(root_pos, root);
 
