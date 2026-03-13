@@ -162,6 +162,49 @@ private:
         parent.n++;
     }
 
+    bool check_duplicate_and_insert(int pos, const KeyValue& kv) {
+        Node node;
+        read_node(pos, node);
+
+        if (node.is_leaf) {
+            // Check for duplicate in this leaf and adjacent leaves with same key
+            int start_pos = pos;
+
+            // Check current and next leaves
+            while (start_pos != -1) {
+                read_node(start_pos, node);
+                bool has_matching_key = false;
+
+                for (int j = 0; j < node.n; j++) {
+                    if (node.keys[j] == kv) {
+                        return false; // Exact duplicate found
+                    }
+                    if (node.keys[j].key == kv.key) {
+                        has_matching_key = true;
+                    } else if (kv.key < node.keys[j].key) {
+                        break;
+                    }
+                }
+
+                // If no more keys match, stop searching
+                if (!has_matching_key && node.n > 0 && kv.key < node.keys[node.n - 1].key) {
+                    break;
+                }
+
+                start_pos = node.next;
+                if (node.n > 0 && kv.key < node.keys[node.n - 1].key) break;
+            }
+
+            return true; // No duplicate found
+        } else {
+            int i = 0;
+            while (i < node.n && !(kv.key < node.keys[i].key)) {
+                i++;
+            }
+            return check_duplicate_and_insert(node.children[i], kv);
+        }
+    }
+
     void insert_non_full(int pos, const KeyValue& kv) {
         Node node;
         read_node(pos, node);
@@ -249,10 +292,9 @@ public:
         kv.key = Key(key_str);
         kv.value = value;
 
-        // Check if already exists (no duplicate key-value pairs)
-        vector<int> existing = find(key_str);
-        for (int v : existing) {
-            if (v == value) return; // Already exists, don't insert
+        // Check for duplicates first
+        if (!check_duplicate_and_insert(root_pos, kv)) {
+            return; // Duplicate found, don't insert
         }
 
         Node root;
